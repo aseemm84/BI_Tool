@@ -21,8 +21,15 @@ def clean_data(df: pd.DataFrame) -> (pd.DataFrame, dict):
     # Standardize column names
     df = df.clean_names()
 
+    # Attempt to convert object columns to datetime where possible
+    for col in df.select_dtypes(include=['object']).columns:
+        try:
+            df[col] = pd.to_datetime(df[col])
+        except (ValueError, TypeError):
+            # This column is not a date, so we'll just leave it as is.
+            pass
+
     # missing values and imputation
-    # For numbers, the mean. For text, the most frequent value (the mode).
     log['missing_values_filled'] = int(df.isnull().sum().sum())
     
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
@@ -33,7 +40,10 @@ def clean_data(df: pd.DataFrame) -> (pd.DataFrame, dict):
     for col in categorical_cols:
         df[col].fillna(df[col].mode()[0], inplace=True)
 
-    
+    # convert categorical text columns into numbers
+    for col in df.select_dtypes(include=['object']).columns:
+        le = LabelEncoder()
+        df[col] = le.fit_transform(df[col])
 
     # get rid of any duplicate rows.
     log['duplicates_removed'] = int(df.duplicated().sum())
