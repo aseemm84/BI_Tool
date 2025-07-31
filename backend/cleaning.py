@@ -33,10 +33,7 @@ def clean_data(df: pd.DataFrame) -> (pd.DataFrame, dict):
     for col in categorical_cols:
         df[col].fillna(df[col].mode()[0], inplace=True)
 
-    # convert categorical text columns into numbers
-    for col in categorical_cols:
-        le = LabelEncoder()
-        df[col] = le.fit_transform(df[col])
+    
 
     # get rid of any duplicate rows.
     log['duplicates_removed'] = int(df.duplicated().sum())
