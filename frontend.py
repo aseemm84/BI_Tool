@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
+import numpy as np # Import numpy
 import plotly.express as px
 import base64
+
+# Our modular backend is now even more powerful with a narratives module.
 from backend import cleaning, analysis, engineering, utils, narratives
 
 # --- Helper Functions ---
@@ -90,7 +93,8 @@ elif st.session_state.step == "profiling_report":
 
     st.subheader("Key Driver Analysis")
     st.write("Select a target variable to see which features influence it the most.")
-    numeric_cols = st.session_state.processed_df.select_dtypes(include=pd.np.number).columns.tolist()
+    # FIX: Use np.number instead of pd.np.number
+    numeric_cols = st.session_state.processed_df.select_dtypes(include=np.number).columns.tolist()
     target_variable = st.selectbox("Select Target Variable", options=[None] + numeric_cols)
 
     if target_variable:
