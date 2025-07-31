@@ -74,6 +74,25 @@ elif st.session_state.step == "profiling_report":
     cols[1].metric("Duplicate Rows Removed", log.get('duplicates_removed', 0))
     cols[2].metric("Potential Outliers", log.get('outliers_identified', 0))
     cols[3].metric("New Features Engineered", log.get('features_engineered', 0))
+
+    # Display Automated Measures
+    if 'measures' in log and log['measures']:
+        st.subheader("Automated Measures")
+        measures = log['measures']
+        # Display measures in columns for better layout
+        num_measures = len(measures)
+        num_cols = min(num_measures, 4) # Max 4 columns
+        if num_cols > 0:
+            measure_cols = st.columns(num_cols)
+            for i, (name, value) in enumerate(measures.items()):
+                col_index = i % num_cols
+                # Format the value nicely
+                if isinstance(value, float):
+                    formatted_value = f"{value:,.2f}"
+                else:
+                    formatted_value = f"{value:,}"
+                measure_cols[col_index].metric(label=name, value=formatted_value)
+
     st.subheader("Key Driver Analysis")
     numeric_cols = st.session_state.processed_df.select_dtypes(include=np.number).columns.tolist()
     target_variable = st.selectbox("Select Target Variable to Analyze", options=[None] + numeric_cols)
