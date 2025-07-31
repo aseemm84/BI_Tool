@@ -9,6 +9,7 @@ from backend import cleaning, analysis, engineering, utils, narratives
 
 # --- Helper Functions ---
 def reset_app():
+    """Clears all session state variables and reruns the app."""
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
@@ -24,6 +25,7 @@ if 'theme' not in st.session_state: st.session_state.theme = "Light"
 if 'processing_log' not in st.session_state: st.session_state.processing_log = {}
 
 # --- Main App Logic ---
+# Check if the app is in presentation mode from the query parameters
 is_presentation_mode = st.query_params.get("present") == "true"
 
 # Step 1: Welcome Screen
@@ -94,7 +96,6 @@ elif st.session_state.step == "manual_feature_creation":
     feature_type = st.selectbox("Select Feature Type", ["Arithmetic (2 columns)", "Unary Transformation (1 column)", "Categorical Counts"])
 
     with st.form("feature_form"):
-        # This part is now structured correctly
         if feature_type == "Arithmetic (2 columns)":
             st.subheader("Arithmetic Operation")
             col1 = st.selectbox("Select first column", numeric_cols)
@@ -183,27 +184,45 @@ elif st.session_state.step == "dashboard":
                         chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
                         chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
                     elif chart_type == "Scatter Plot":
-                        chart_config['x'], chart_config['y'] = st.selectbox("X-axis", compatible_cols.get('x', [])), st.selectbox("Y-axis", compatible_cols.get('y', []))
+                        chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
+                        chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
                     elif chart_type == "3D Scatter Plot":
-                        chart_config['x'], chart_config['y'], chart_config['z'] = st.selectbox("X-axis", compatible_cols.get('x', [])), st.selectbox("Y-axis", compatible_cols.get('y', [])), st.selectbox("Z-axis", compatible_cols.get('z', []))
+                        chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
+                        chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
+                        chart_config['z'] = st.selectbox("Z-axis", compatible_cols.get('z', []))
+                    elif chart_type == "Bubble Chart":
+                        chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
+                        chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
+                        chart_config['size'] = st.selectbox("Size", compatible_cols.get('size', []))
+                        chart_config['color'] = st.selectbox("Color", compatible_cols.get('color', []))
+                    elif chart_type == "Data Table":
+                        all_cols = compatible_cols.get('all', [])
+                        chart_config['columns'] = st.multiselect("Select columns to display", all_cols, default=all_cols[:5])
                     elif chart_type in ["Donut Chart", "Funnel Chart"]:
-                        chart_config['names'], chart_config['values'] = st.selectbox("Categories", compatible_cols.get('names', [])), st.selectbox("Values", compatible_cols.get('values', []))
+                        chart_config['names'] = st.selectbox("Categories", compatible_cols.get('names', []))
+                        chart_config['values'] = st.selectbox("Values", compatible_cols.get('values', []))
                     elif chart_type in ["Treemap", "Sunburst Chart"]:
-                        chart_config['path'] = st.multiselect("Hierarchy Path", compatible_cols.get('path', []), default=compatible_cols.get('path', [])[:2])
+                        path_cols = compatible_cols.get('path', [])
+                        chart_config['path'] = st.multiselect("Hierarchy Path", path_cols, default=path_cols[:2])
                         chart_config['values'] = st.selectbox("Values", compatible_cols.get('values', []))
                     elif chart_type == "Gantt Chart":
-                        chart_config['Task'], chart_config['Start'], chart_config['Finish'] = st.selectbox("Task Column", compatible_cols.get('Task', [])), st.selectbox("Start Date Column", compatible_cols.get('Start', [])), st.selectbox("Finish Date Column", compatible_cols.get('Finish', []))
+                        chart_config['Task'] = st.selectbox("Task Column", compatible_cols.get('Task', []))
+                        chart_config['Start'] = st.selectbox("Start Date Column", compatible_cols.get('Start', []))
+                        chart_config['Finish'] = st.selectbox("Finish Date Column", compatible_cols.get('Finish', []))
                     
                     if st.form_submit_button("Add Chart to Dashboard"):
                         st.session_state.charts.append(chart_config)
                         st.rerun()
-            # Branding section...
+
+            # Branding section
             st.sidebar.markdown("---")
             linkedin_icon_svg = """<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-linkedin"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>"""
             b64_linkedin_icon = base64.b64encode(linkedin_icon_svg.encode()).decode()
             st.sidebar.markdown(f"""<div style="text-align: center; padding-top: 10px;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank"><img src="data:image/svg+xml;base64,{b64_linkedin_icon}" alt="LinkedIn" width="24" height="24"></a></div>""", unsafe_allow_html=True)
 
-    if not st.session_state.charts: st.info("Your dashboard is empty. Add some charts from the sidebar!")
+    # Main dashboard area for displaying charts
+    if not st.session_state.charts: 
+        st.info("Your dashboard is empty. Add some charts from the sidebar!")
     else:
         for i, chart_config in enumerate(st.session_state.charts):
             with st.container(border=True):
@@ -211,30 +230,55 @@ elif st.session_state.step == "dashboard":
                 try:
                     plotly_template = 'plotly_white' if st.session_state.theme == "Light" else 'plotly_dark'
                     fig = None
-                    if chart_config['type'] == "Heatmap":
-                        corr = df[utils.get_chart_compatible_columns(df, 'Heatmap')['numeric_only']].corr()
-                        fig = px.imshow(corr, text_auto=True, aspect="auto")
-                    elif chart_config['type'] == "Gantt Chart":
-                        fig = px.timeline(df, x_start=chart_config['Start'], x_end=chart_config['Finish'], y=chart_config['Task'])
-                    # ... (other chart rendering logic)
+                    narrative_text = ""
+
+                    # Handle Data Table separately as it doesn't use Plotly
+                    if chart_config['type'] == "Data Table":
+                        st.dataframe(df[chart_config.get('columns', df.columns)], use_container_width=True)
+                        narrative_text = f"Displaying {len(chart_config.get('columns', df.columns))} selected columns."
                     else:
-                        # Simplified logic for other charts
-                        if chart_config['type'] == "Bar Chart": fig = px.bar(df, x=chart_config['x'], y=chart_config['y'])
-                        elif chart_config['type'] == "Line Chart": fig = px.line(df, x=chart_config['x'], y=chart_config['y'])
-                        elif chart_config['type'] == "Scatter Plot": fig = px.scatter(df, x=chart_config['x'], y=chart_config['y'])
-                        elif chart_config['type'] == "3D Scatter Plot": fig = px.scatter_3d(df, x=chart_config['x'], y=chart_config['y'], z=chart_config['z'])
-                        elif chart_config['type'] == "Donut Chart": fig = px.pie(df, names=chart_config['names'], values=chart_config['values'], hole=0.5)
-                        elif chart_config['type'] == "Treemap": fig = px.treemap(df, path=chart_config['path'], values=chart_config['values'])
-                        elif chart_config['type'] == "Sunburst Chart": fig = px.sunburst(df, path=chart_config['path'], values=chart_config['values'])
-                        elif chart_config['type'] == "Violin Chart": fig = px.violin(df, x=chart_config['x'], y=chart_config['y'], box=True)
-                    
-                    if fig:
-                        fig.update_layout(template=plotly_template, title_text="")
-                        st.plotly_chart(fig, use_container_width=True)
-                    
-                    narrative_text = narratives.generate_narrative(chart_config, df)
+                        # The rest of the charts use Plotly
+                        if chart_config['type'] == "Heatmap":
+                            corr = df[utils.get_chart_compatible_columns(df, 'Heatmap')['numeric_only']].corr()
+                            fig = px.imshow(corr, text_auto=True, aspect="auto")
+                        elif chart_config['type'] == "Gantt Chart":
+                            fig = px.timeline(df, x_start=chart_config['Start'], x_end=chart_config['Finish'], y=chart_config['Task'])
+                        elif chart_config['type'] == "Bar Chart": 
+                            fig = px.bar(df, x=chart_config.get('x'), y=chart_config.get('y'))
+                        elif chart_config['type'] == "Line Chart": 
+                            fig = px.line(df, x=chart_config.get('x'), y=chart_config.get('y'))
+                        elif chart_config['type'] == "Scatter Plot": 
+                            fig = px.scatter(df, x=chart_config.get('x'), y=chart_config.get('y'))
+                        elif chart_config['type'] == "3D Scatter Plot": 
+                            fig = px.scatter_3d(df, x=chart_config.get('x'), y=chart_config.get('y'), z=chart_config.get('z'))
+                        elif chart_config['type'] == "Bubble Chart":
+                             fig = px.scatter(df, x=chart_config.get('x'), y=chart_config.get('y'), size=chart_config.get('size'), color=chart_config.get('color'))
+                        elif chart_config['type'] == "Donut Chart": 
+                            fig = px.pie(df, names=chart_config.get('names'), values=chart_config.get('values'), hole=0.5)
+                        elif chart_config['type'] == "Funnel Chart":
+                            fig = px.funnel(df, x=chart_config.get('names'), y=chart_config.get('values'))
+                        elif chart_config['type'] == "Treemap": 
+                            fig = px.treemap(df, path=chart_config.get('path'), values=chart_config.get('values'))
+                        elif chart_config['type'] == "Sunburst Chart": 
+                            fig = px.sunburst(df, path=chart_config.get('path'), values=chart_config.get('values'))
+                        elif chart_config['type'] == "Violin Chart": 
+                            fig = px.violin(df, x=chart_config.get('x'), y=chart_config.get('y'), box=True)
+                        elif chart_config['type'] == "Box Plot":
+                            fig = px.box(df, x=chart_config.get('x'), y=chart_config.get('y'))
+                        elif chart_config['type'] == "Histogram":
+                            fig = px.histogram(df, x=chart_config.get('x'), y=chart_config.get('y'))
+
+                        if fig:
+                            fig.update_layout(template=plotly_template, title_text="")
+                            st.plotly_chart(fig, use_container_width=True)
+                        
+                        narrative_text = narratives.generate_narrative(chart_config, df)
+
                     st.markdown(f"**💡 Insight:** {narrative_text}")
-                except Exception as e: st.error(f"Could not create chart: {e}")
+
+                except Exception as e: 
+                    st.error(f"Could not create chart '{chart_config.get('title')}': {e}")
+                
                 if not is_presentation_mode:
                     if st.button("🗑️ Remove", key=f"del_{chart_config['id']}", use_container_width=True):
                         st.session_state.charts = [c for c in st.session_state.charts if c['id'] != chart_config['id']]
