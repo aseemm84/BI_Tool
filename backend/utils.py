@@ -13,7 +13,7 @@ def get_chart_compatible_columns(df: pd.DataFrame, chart_type: str) -> dict:
     all_cols = df.columns.tolist()
 
     # General purpose charts
-    if chart_type in ['Line Chart', 'Bar Chart', 'Area Chart', 'Histogram', 'Box Plot', 'Violin Plot']:
+    if chart_type in ['Line Chart', 'Bar Chart', 'Area Chart', 'Histogram', 'Box Plot', 'Violin Chart']:
         return {'x': categorical_cols + date_cols + numeric_cols, 'y': numeric_cols}
     
     # Scatter and Bubble charts
