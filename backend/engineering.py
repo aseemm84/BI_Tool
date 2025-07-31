@@ -82,6 +82,11 @@ def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
                 df_out[new_col_name] = df_out[col] ** 2
             elif op == 'sqrt':
                 df_out[new_col_name] = np.sqrt(df_out[col].clip(lower=0)) # Avoid sqrt of negative
+            elif op == 'average':
+                # Create a new column where every value is the average of the selected column
+                avg_val = df_out[col].mean()
+                df_out[new_col_name] = avg_val
+
 
         elif op_type == 'categorical_count':
             col = definition['col']
