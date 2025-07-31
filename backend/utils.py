@@ -39,3 +39,15 @@ def get_chart_compatible_columns(df: pd.DataFrame, chart_type: str) -> dict:
     # For KPI, Data Table, etc.
     else: 
         return {'all': all_cols}
+
+def to_excel(df: pd.DataFrame) -> bytes:
+    """
+    Converts a dataframe to an in-memory Excel file.
+    This is more efficient than writing to disk first.
+    """
+    output = io.BytesIO()
+    # Using xlsxwriter engine allows for more formatting options if needed later.
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Processed_Data')
+    processed_data = output.getvalue()
+    return processed_data
