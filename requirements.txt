@@ -3,6 +3,6 @@ streamlit
 plotly
 scikit-learn
 numpy
-janitor
+pyjanitor>=0.25.0
 featuretools
 xlsxwriter
