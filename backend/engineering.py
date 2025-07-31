@@ -4,9 +4,36 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import featuretools as ft
 
+def create_automated_measures(df: pd.DataFrame) -> dict:
+    """
+    Creates single-value measures from a DataFrame, similar to Power BI measures.
+
+    Args:
+        df: The pandas DataFrame.
+
+    Returns:
+        A dictionary containing the calculated measures.
+    """
+    measures = {}
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+
+    # Create summation and average for numeric columns
+    for col in numeric_cols:
+        # To avoid adding measures for identifiers or index-like columns with many unique values
+        if df[col].nunique() > 1:
+            measures[f"Sum of {col}"] = df[col].sum()
+            measures[f"Average of {col}"] = df[col].mean()
+
+    # Create distinct count for categorical columns
+    for col in categorical_cols:
+        measures[f"Count of {col}"] = df[col].nunique()
+
+    return measures
+
 def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     """
-    Uses featuretools to automatically create new features.
+    Uses featuretools to automatically create new features and calculates single-value measures.
 
     Args:
         df: The pandas DataFrame.
@@ -14,10 +41,13 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     Returns:
         A tuple containing:
         - The DataFrame with new features.
-        - A log dictionary.
+        - A log dictionary, including calculated measures.
     """
     log = {}
     initial_feature_count = len(df.columns)
+    
+    # Calculate automated measures and add them to the log
+    log['measures'] = create_automated_measures(df)
     
     es = ft.EntitySet(id='main_entityset')
     df_copy = df.copy()
@@ -31,6 +61,7 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
         index='index_col'
     )
 
+    # This part creates new columns (features), which is different from measures
     feature_matrix, _ = ft.dfs(
         entityset=es,
         target_dataframe_name='main_data',
