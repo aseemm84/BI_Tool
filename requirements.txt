@@ -1,0 +1,8 @@
+pandas
+streamlit
+plotly
+scikit-learn
+numpy
+janitor
+featuretools
+xlsxwriter
