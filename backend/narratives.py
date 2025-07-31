@@ -17,56 +17,41 @@ def generate_narrative(chart_config: dict, df: pd.DataFrame) -> str:
         if chart_type == 'Bar Chart':
             x_col, y_col = chart_config['x'], chart_config['y']
             if df[x_col].nunique() < 2: return "Not enough distinct categories to compare."
-            # Group by the categorical column and sum the numerical one
             grouped_data = df.groupby(x_col)[y_col].sum()
-            max_cat = grouped_data.idxmax()
-            min_cat = grouped_data.idxmin()
+            max_cat, min_cat = grouped_data.idxmax(), grouped_data.idxmin()
             return f"The data highlights that '{max_cat}' has the highest value, while '{min_cat}' has the lowest."
 
         elif chart_type == 'Line Chart':
             x_col, y_col = chart_config['x'], chart_config['y']
             if len(df) < 2: return "Not enough data points to determine a trend."
-            # Assuming the x-axis is sorted (e.g., by date)
-            start_val = df[y_col].iloc[0]
-            end_val = df[y_col].iloc[-1]
-            if end_val > start_val:
-                trend = "an upward trend"
-            elif end_val < start_val:
-                trend = "a downward trend"
-            else:
-                trend = "a stable trend"
+            start_val, end_val = df[y_col].iloc[0], df[y_col].iloc[-1]
+            trend = "an upward trend" if end_val > start_val else "a downward trend" if end_val < start_val else "a stable trend"
             return f"Over the observed period, '{y_col}' shows {trend}."
 
-        elif chart_type == 'Scatter Plot':
+        elif chart_type in ['Scatter Plot', '3D Scatter Plot', 'Bubble Chart']:
             x_col, y_col = chart_config['x'], chart_config['y']
             correlation = df[x_col].corr(df[y_col])
-            
-            if abs(correlation) > 0.7:
-                strength = "a strong"
-            elif abs(correlation) > 0.4:
-                strength = "a moderate"
-            else:
-                strength = "a weak"
-                
+            strength = "a strong" if abs(correlation) > 0.7 else "a moderate" if abs(correlation) > 0.4 else "a weak"
             direction = "positive" if correlation > 0 else "negative"
-            
-            if strength == "a weak":
-                return f"There appears to be a weak relationship between '{x_col}' and '{y_col}'."
-            else:
-                return f"A {strength} {direction} correlation is observed between '{x_col}' and '{y_col}'."
+            return f"A {strength} {direction} correlation is observed between '{x_col}' and '{y_col}'." if strength != "a weak" else f"There appears to be a weak relationship between '{x_col}' and '{y_col}'."
 
-        elif chart_type == 'Donut Chart':
-            names_col, values_col = chart_config['names'], chart_config['values']
+        elif chart_type in ['Donut Chart', 'Treemap', 'Sunburst Chart']:
+            names_col, values_col = chart_config.get('names') or chart_config.get('path')[0], chart_config['values']
             if df[names_col].nunique() < 1: return "No categories to display."
             grouped_data = df.groupby(names_col)[values_col].sum()
             largest_slice = grouped_data.idxmax()
             percentage = (grouped_data.max() / grouped_data.sum()) * 100
             return f"'{largest_slice}' represents the largest segment, accounting for {percentage:.1f}% of the total."
+        
+        elif chart_type in ['Box Plot', 'Violin Plot']:
+            x_col, y_col = chart_config['x'], chart_config['y']
+            return f"This plot shows the distribution of '{y_col}' across different categories of '{x_col}', highlighting differences in median and spread."
+
+        elif chart_type == 'Heatmap':
+            return "This heatmap visualizes the correlation between numeric variables. Warmer colors indicate a stronger positive correlation."
 
         else:
-            # Default message if the chart type has no specific narrative logic yet.
             return "This chart visualizes the distribution and relationship of the selected data."
 
     except Exception:
-        # If any error occurs during narrative generation, just return a safe default.
         return "An automated narrative for this chart could not be generated."
