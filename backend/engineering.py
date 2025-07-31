@@ -19,10 +19,8 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     log = {}
     initial_feature_count = len(df.columns)
     
-    # Featuretools requires a unique index
     es = ft.EntitySet(id='main_entityset')
     df_copy = df.copy()
-    # Ensure index is unique before setting it
     if df_copy.index.duplicated().any():
         df_copy = df_copy.reset_index(drop=True)
     df_copy['index_col'] = df_copy.index
@@ -33,7 +31,6 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
         index='index_col'
     )
 
-    # Run Deep Feature Synthesis to generate new features.
     feature_matrix, _ = ft.dfs(
         entityset=es,
         target_dataframe_name='main_data',
@@ -46,6 +43,59 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     log['features_engineered'] = final_feature_count - initial_feature_count
     
     return feature_matrix, log
+
+def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
+    """
+    Creates a new feature based on a user-provided definition dictionary.
+
+    Args:
+        df: The pandas DataFrame to add the feature to.
+        definition: A dictionary defining the feature to create.
+    
+    Returns:
+        The DataFrame with the new feature column.
+    """
+    op_type = definition.get('type')
+    df_out = df.copy()
+
+    try:
+        if op_type == 'arithmetic':
+            col1, col2, op = definition['col1'], definition['col2'], definition['op']
+            new_col_name = f"{col1}_{op}_{col2}"
+            if op == 'add':
+                df_out[new_col_name] = df_out[col1] + df_out[col2]
+            elif op == 'subtract':
+                df_out[new_col_name] = df_out[col1] - df_out[col2]
+            elif op == 'multiply':
+                df_out[new_col_name] = df_out[col1] * df_out[col2]
+            elif op == 'divide':
+                # Add a small epsilon to avoid division by zero
+                df_out[new_col_name] = df_out[col1] / (df_out[col2] + 1e-6)
+        
+        elif op_type == 'unary':
+            col, op = definition['col'], definition['op']
+            new_col_name = f"{op}_of_{col}"
+            if op == 'log':
+                # Add 1 to avoid log(0)
+                df_out[new_col_name] = np.log(df_out[col] + 1)
+            elif op == 'square':
+                df_out[new_col_name] = df_out[col] ** 2
+            elif op == 'sqrt':
+                df_out[new_col_name] = np.sqrt(df_out[col].clip(lower=0)) # Avoid sqrt of negative
+
+        elif op_type == 'categorical_count':
+            col = definition['col']
+            new_col_name = f"{col}_counts"
+            counts = df_out[col].value_counts().to_dict()
+            df_out[new_col_name] = df_out[col].map(counts)
+
+    except Exception as e:
+        # In a real app, you might want to log this error or show it to the user.
+        print(f"Error creating custom feature: {e}")
+        return df # Return original df on error
+
+    return df_out
+
 
 def perform_segmentation(df: pd.DataFrame, n_clusters: int) -> (pd.DataFrame, dict):
     """
@@ -66,7 +116,6 @@ def perform_segmentation(df: pd.DataFrame, n_clusters: int) -> (pd.DataFrame, di
     if not numeric_cols:
         return df, log
 
-    # scale data before clustering, so that one feature doesn't dominate the others.
     scaler = StandardScaler()
     scaled_data = scaler.fit_transform(df[numeric_cols])
     
