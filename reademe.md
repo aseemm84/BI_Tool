@@ -89,7 +89,7 @@ graph TD
     F --> G
     G --> H["Manual Feature Creation (Optional)"]
     H --> I["Segmentation (Optional)"]
-    I --> J[6. Build Dashboard]
+    I --> J[Build Dashboard]
     J --> K{Add KPI Cards}
     J --> L{Add Charts}
     J --> M{Customize Layout & Theme}
