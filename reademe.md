@@ -74,8 +74,8 @@ graph TD
     D --> G[3. Profiling Report]
     E --> G
     F --> G
-    G --> H{4. Manual Feature Creation (Optional)}
-    H --> I{5. Segmentation (Optional)}
+    G --> H["4. Manual Feature Creation (Optional)"]
+    H --> I["5. Segmentation (Optional)"]
     I --> J[6. Build Dashboard]
     J --> K{Add KPI Cards}
     J --> L{Add Charts}
