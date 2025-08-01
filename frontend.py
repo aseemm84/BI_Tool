@@ -390,7 +390,6 @@ elif st.session_state.step == "dashboard":
             )
             st.session_state.kpi_cards = selected_kpis
 
-            # --- NEW: Storytelling & Reordering Section ---
             st.header("Storytelling Assistant")
             if len(st.session_state.charts) >= 4:
                 if st.button("💡 Suggest Story Order", use_container_width=True):
@@ -406,9 +405,7 @@ elif st.session_state.step == "dashboard":
                             default=chart_titles
                         )
                         if st.button("Update Dashboard Layout", use_container_width=True):
-                            # Create a mapping of title to chart config
                             chart_map = {c['title']: c for c in st.session_state.charts}
-                            # Reorder the session state list
                             st.session_state.charts = [chart_map[title] for title in ordered_titles]
                             st.rerun()
             else:
@@ -418,18 +415,24 @@ elif st.session_state.step == "dashboard":
             st.header("Export Options")
             st.download_button(label="📥 Download Processed Data (Excel)", data=utils.to_excel(df), file_name="processed_data.xlsx", mime="application/vnd.ms-excel", use_container_width=True)
             
+            # --- FIX APPLIED HERE ---
             st.header("Add a New Chart")
             if len(st.session_state.charts) >= 10:
                 st.warning("Maximum of 10 charts reached.")
             else:
-                with st.form(f"chart_form", clear_on_submit=True):
-                    chart_types = ["Bar Chart", "Line Chart", "Scatter Plot", "3D Scatter Plot", "Donut Chart", "Data Table", "Bubble Chart", "Box Plot", "Histogram", "Violin Chart", "Treemap", "Heatmap", "Sunburst Chart", "Funnel Chart", "Gantt Chart"]
-                    chart_type = st.selectbox("Select Chart Type", sorted(chart_types))
+                chart_types = ["Bar Chart", "Line Chart", "Scatter Plot", "3D Scatter Plot", "Donut Chart", "Data Table", "Bubble Chart", "Box Plot", "Histogram", "Violin Chart", "Treemap", "Heatmap", "Sunburst Chart", "Funnel Chart", "Gantt Chart"]
+                
+                # Move the chart type selector OUTSIDE the form
+                chart_type = st.selectbox("Select Chart Type", sorted(chart_types), key="chart_type_selector")
+                
+                # Use a dynamic key for the form based on the chart_type
+                with st.form(key=f"chart_form_{chart_type}", clear_on_submit=True):
                     st.subheader(f"Configure {chart_type}")
-                    chart_config = {'type': chart_type, 'id': f"chart_{len(st.session_state.charts)}"}
+                    chart_config = {'type': chart_type, 'id': f"chart_{np.random.randint(1000, 9999)}"} # Use random id to avoid collisions
                     chart_config['title'] = st.text_input("Chart Title", value=f"New {chart_type}")
                     compatible_cols = utils.get_chart_compatible_columns(df, chart_type)
                     
+                    # The configuration UI now correctly uses the up-to-date chart_type
                     if chart_type in ["Bar Chart", "Line Chart", "Histogram", "Box Plot", "Violin Chart"]:
                         chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
                         chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
