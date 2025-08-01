@@ -73,10 +73,17 @@ def clean_data(df: pd.DataFrame) -> (pd.DataFrame, dict):
 
     for col in numeric_cols:
         df[col].fillna(df[col].median(), inplace=True) # Using median is more robust to outliers
+    
+    # --- FIX APPLIED HERE ---
     for col in categorical_cols:
-        df[col].fillna(df[col].mode()[0], inplace=True)
+        mode_values = df[col].mode()
+        if not mode_values.empty:
+            df[col].fillna(mode_values[0], inplace=True)
+
     for col in datetime_cols:
-        df[col].fillna(df[col].mode()[0], inplace=True) # Fill with the most frequent date
+        mode_values = df[col].mode()
+        if not mode_values.empty:
+            df[col].fillna(mode_values[0], inplace=True) # Fill with the most frequent date
 
     # get rid of any duplicate rows.
     log['duplicates_removed'] = int(df.duplicated().sum())
