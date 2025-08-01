@@ -212,6 +212,7 @@ st.markdown(f"""
 if st.session_state.step == "welcome":
     st.title("🚀 Welcome to the Advanced BI Tool (v2.1)")
     st.markdown("**Transform raw data into beautiful, insightful, and presentation-ready dashboards in minutes.**")
+    st.markdown("For more details, check out the project's [README on GitHub](https://github.com/aseemm84/Streamlit_BI_Tool/blob/main/reademe.md).")
     st.markdown("""<div style="text-align: center; padding: 2rem;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank">LinkedIn Profile</a></div>""", unsafe_allow_html=True)
     if st.button("Let's Get Started!", type="primary"):
         st.session_state.step = "upload"
