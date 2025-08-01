@@ -38,7 +38,7 @@ def get_category_colors(chart_config: dict, df: pd.DataFrame) -> dict:
             chart_config['colors'] = {}
             
         unique_categories = df[color_col].unique()
-default_colors = px.colors.qualitative.Plotly
+        default_colors = px.colors.qualitative.Plotly
         with st.expander("Customize Colors"):
             for i, category in enumerate(unique_categories):
                 # Use a regex to create a valid key from the category name
