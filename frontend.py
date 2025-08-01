@@ -176,6 +176,7 @@ if 'kpi_cards' not in st.session_state: st.session_state.kpi_cards = []
 if 'theme' not in st.session_state: st.session_state.theme = "Light"
 if 'processing_log' not in st.session_state: st.session_state.processing_log = {}
 if 'story_suggestion' not in st.session_state: st.session_state.story_suggestion = ""
+if 'chart_id_counter' not in st.session_state: st.session_state.chart_id_counter = 0 # <-- FIX ADDED HERE
 if 'dashboard_settings' not in st.session_state:
     st.session_state.dashboard_settings = {
         'layout': '1920x1080 (Full HD)',
@@ -415,24 +416,25 @@ elif st.session_state.step == "dashboard":
             st.header("Export Options")
             st.download_button(label="📥 Download Processed Data (Excel)", data=utils.to_excel(df), file_name="processed_data.xlsx", mime="application/vnd.ms-excel", use_container_width=True)
             
-            # --- FIX APPLIED HERE ---
             st.header("Add a New Chart")
             if len(st.session_state.charts) >= 10:
                 st.warning("Maximum of 10 charts reached.")
             else:
                 chart_types = ["Bar Chart", "Line Chart", "Scatter Plot", "3D Scatter Plot", "Donut Chart", "Data Table", "Bubble Chart", "Box Plot", "Histogram", "Violin Chart", "Treemap", "Heatmap", "Sunburst Chart", "Funnel Chart", "Gantt Chart"]
                 
-                # Move the chart type selector OUTSIDE the form
                 chart_type = st.selectbox("Select Chart Type", sorted(chart_types), key="chart_type_selector")
                 
-                # Use a dynamic key for the form based on the chart_type
                 with st.form(key=f"chart_form_{chart_type}", clear_on_submit=True):
                     st.subheader(f"Configure {chart_type}")
-                    chart_config = {'type': chart_type, 'id': f"chart_{np.random.randint(1000, 9999)}"} # Use random id to avoid collisions
+                    
+                    # --- FIX APPLIED HERE ---
+                    # Use a sequential counter for unique IDs instead of random numbers
+                    chart_id = st.session_state.chart_id_counter
+                    chart_config = {'type': chart_type, 'id': f"chart_{chart_id}"}
+                    
                     chart_config['title'] = st.text_input("Chart Title", value=f"New {chart_type}")
                     compatible_cols = utils.get_chart_compatible_columns(df, chart_type)
                     
-                    # The configuration UI now correctly uses the up-to-date chart_type
                     if chart_type in ["Bar Chart", "Line Chart", "Histogram", "Box Plot", "Violin Chart"]:
                         chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
                         chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
@@ -468,6 +470,7 @@ elif st.session_state.step == "dashboard":
                     
                     if st.form_submit_button("Add Chart to Dashboard"):
                         st.session_state.charts.append(chart_config)
+                        st.session_state.chart_id_counter += 1 # Increment the counter
                         st.rerun()
 
             st.sidebar.markdown("---")
