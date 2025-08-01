@@ -79,7 +79,7 @@ This is the final and most creative step.
 
 ```mermaid
 graph TD
-    A[Start: Welcome Page] --> B{1. Upload CSV}
+    A[Start: Welcome Page] --> B{Upload CSV}
     B --> C[Automated Processing]
     C --> D{Data Cleaning}
     C --> E{Feature Engineering}
