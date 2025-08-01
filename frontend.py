@@ -166,7 +166,7 @@ def render_chart(chart_config: dict, df: pd.DataFrame, theme: str):
                 st.rerun()
 
 # --- Page Configuration ---
-st.set_page_config(page_title="BI Tool v2.0 by Aseem Mehrotra", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="BI Tool v2.1 by Aseem Mehrotra", page_icon="🚀", layout="wide")
 
 # --- Session State Initialization ---
 if 'step' not in st.session_state: st.session_state.step = "welcome"
@@ -175,6 +175,7 @@ if 'charts' not in st.session_state: st.session_state.charts = []
 if 'kpi_cards' not in st.session_state: st.session_state.kpi_cards = []
 if 'theme' not in st.session_state: st.session_state.theme = "Light"
 if 'processing_log' not in st.session_state: st.session_state.processing_log = {}
+if 'story_suggestion' not in st.session_state: st.session_state.story_suggestion = ""
 if 'dashboard_settings' not in st.session_state:
     st.session_state.dashboard_settings = {
         'layout': '1920x1080 (Full HD)',
@@ -208,7 +209,7 @@ st.markdown(f"""
 
 # Step 1: Welcome Screen
 if st.session_state.step == "welcome":
-    st.title("🚀 Welcome to the Advanced BI Tool (v2.0)")
+    st.title("🚀 Welcome to the Advanced BI Tool (v2.1)")
     st.markdown("**Transform raw data into beautiful, insightful, and presentation-ready dashboards in minutes.**")
     st.markdown("""<div style="text-align: center; padding: 2rem;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank">LinkedIn Profile</a></div>""", unsafe_allow_html=True)
     if st.button("Let's Get Started!", type="primary"):
@@ -286,7 +287,6 @@ elif st.session_state.step == "profiling_report":
 # Step 5: Manual Feature Creation
 elif st.session_state.step == "manual_feature_creation":
     st.title("🛠️ Manual Feature Creation")
-    # This section remains largely the same
     st.write("Create your own features to add to the dataset.")
     
     df = st.session_state.processed_df
@@ -368,8 +368,8 @@ elif st.session_state.step == "dashboard":
             if st.button("🔄 Reset Dashboard", use_container_width=True): 
                 st.session_state.charts = []
                 st.session_state.kpi_cards = []
+                st.session_state.story_suggestion = ""
             
-            # --- NEW: Dashboard Layout Settings ---
             with st.expander("Dashboard Settings", expanded=True):
                 st.session_state.dashboard_settings['layout'] = st.selectbox(
                     "Layout Resolution",
@@ -380,7 +380,6 @@ elif st.session_state.step == "dashboard":
                     "Background Color", value=st.session_state.dashboard_settings.get('bg_color', '#F0F2F6')
                 )
 
-            # --- NEW: KPI Card Selection ---
             st.header("KPI Cards")
             available_measures = list(st.session_state.get('available_measures', {}).keys())
             selected_kpis = st.multiselect(
@@ -391,23 +390,46 @@ elif st.session_state.step == "dashboard":
             )
             st.session_state.kpi_cards = selected_kpis
 
+            # --- NEW: Storytelling & Reordering Section ---
+            st.header("Storytelling Assistant")
+            if len(st.session_state.charts) >= 4:
+                if st.button("💡 Suggest Story Order", use_container_width=True):
+                    st.session_state.story_suggestion = narratives.generate_story_suggestion(st.session_state.charts)
+                
+                if st.session_state.story_suggestion:
+                    st.markdown(st.session_state.story_suggestion)
+                    with st.expander("Arrange Your Dashboard", expanded=True):
+                        chart_titles = [c['title'] for c in st.session_state.charts]
+                        ordered_titles = st.multiselect(
+                            "Select the order of your charts:",
+                            options=chart_titles,
+                            default=chart_titles
+                        )
+                        if st.button("Update Dashboard Layout", use_container_width=True):
+                            # Create a mapping of title to chart config
+                            chart_map = {c['title']: c for c in st.session_state.charts}
+                            # Reorder the session state list
+                            st.session_state.charts = [chart_map[title] for title in ordered_titles]
+                            st.rerun()
+            else:
+                st.info("Add at least 4 charts to enable the Storytelling Assistant.")
+
+
             st.header("Export Options")
             st.download_button(label="📥 Download Processed Data (Excel)", data=utils.to_excel(df), file_name="processed_data.xlsx", mime="application/vnd.ms-excel", use_container_width=True)
             
-            # --- Chart Creation Form ---
             st.header("Add a New Chart")
             if len(st.session_state.charts) >= 10:
                 st.warning("Maximum of 10 charts reached.")
             else:
-                chart_types = ["Bar Chart", "Line Chart", "Scatter Plot", "3D Scatter Plot", "Donut Chart", "Data Table", "Bubble Chart", "Box Plot", "Histogram", "Violin Chart", "Treemap", "Heatmap", "Sunburst Chart", "Funnel Chart", "Gantt Chart"]
-                chart_type = st.selectbox("Select Chart Type", sorted(chart_types))
-                with st.form(f"chart_form_{chart_type}", clear_on_submit=True):
+                with st.form(f"chart_form", clear_on_submit=True):
+                    chart_types = ["Bar Chart", "Line Chart", "Scatter Plot", "3D Scatter Plot", "Donut Chart", "Data Table", "Bubble Chart", "Box Plot", "Histogram", "Violin Chart", "Treemap", "Heatmap", "Sunburst Chart", "Funnel Chart", "Gantt Chart"]
+                    chart_type = st.selectbox("Select Chart Type", sorted(chart_types))
                     st.subheader(f"Configure {chart_type}")
                     chart_config = {'type': chart_type, 'id': f"chart_{len(st.session_state.charts)}"}
                     chart_config['title'] = st.text_input("Chart Title", value=f"New {chart_type}")
                     compatible_cols = utils.get_chart_compatible_columns(df, chart_type)
                     
-                    # --- Simplified Chart Config UI ---
                     if chart_type in ["Bar Chart", "Line Chart", "Histogram", "Box Plot", "Violin Chart"]:
                         chart_config['x'] = st.selectbox("X-axis", compatible_cols.get('x', []))
                         chart_config['y'] = st.selectbox("Y-axis", compatible_cols.get('y', []))
@@ -445,13 +467,11 @@ elif st.session_state.step == "dashboard":
                         st.session_state.charts.append(chart_config)
                         st.rerun()
 
-            # Branding section
             st.sidebar.markdown("---")
             st.sidebar.markdown("""<div style="text-align: center; padding-top: 10px;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank">LinkedIn Profile</a></div>""", unsafe_allow_html=True)
 
     # --- Main dashboard area ---
     
-    # Render KPI Cards
     if st.session_state.kpi_cards:
         kpi_cols = st.columns(len(st.session_state.kpi_cards))
         all_measures = st.session_state.get('available_measures', {})
@@ -462,5 +482,4 @@ elif st.session_state.step == "dashboard":
                 st.metric(label=kpi_name, value=formatted_value)
         st.markdown("---")
 
-    # Render the dynamic chart layout
     render_dashboard_layout(st.session_state.charts, df, st.session_state.theme)
