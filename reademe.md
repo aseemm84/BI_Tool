@@ -64,6 +64,19 @@ This is the final and most creative step.
 - Customize colors, themes, and background.
 - When you're ready, click the "Present 📽️" button to enter a clean, full-screen presentation mode.
 
+## 🛠️ Technology Stack
+
+- **Frontend**: Streamlit
+- **Data Manipulation**: Pandas, NumPy
+- **Data Cleaning**: PyJanitor
+- **Machine Learning & Analysis**: Scikit-learn, Featuretools
+- **Data Visualization**: Plotly
+
+
+## 👤 Author
+
+**Aseem Mehrotra**
+
 ```mermaid
 graph TD
     A[Start: Welcome Page] --> B{1. Upload CSV}
@@ -104,16 +117,5 @@ graph TD
     style O fill:#2aa198,stroke:#333,stroke-width:2px,color:#fff
 
 
-## 🛠️ Technology Stack
 
-- **Frontend**: Streamlit
-- **Data Manipulation**: Pandas, NumPy
-- **Data Cleaning**: PyJanitor
-- **Machine Learning & Analysis**: Scikit-learn, Featuretools
-- **Data Visualization**: Plotly
-
-
-## 👤 Author
-
-**Aseem Mehrotra**
 
