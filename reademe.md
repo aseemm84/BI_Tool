@@ -93,7 +93,7 @@ graph TD
     J --> K{Add KPI Cards}
     J --> L{Add Charts}
     J --> M{Customize Layout & Theme}
-    J --> N{Use Storytelling Assistant (at least 4 charts required)}
+    J --> N{Use Storytelling Assistant: at least 4 charts required}
     K --> O[End: Interactive & Presentation-Ready Dashboard]
     L --> O
     M --> O
