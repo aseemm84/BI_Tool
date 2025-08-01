@@ -38,14 +38,15 @@ def get_category_colors(chart_config: dict, df: pd.DataFrame) -> dict:
             chart_config['colors'] = {}
             
         unique_categories = df[color_col].unique()
+default_colors = px.colors.qualitative.Plotly
         with st.expander("Customize Colors"):
-            for category in unique_categories:
+            for i, category in enumerate(unique_categories):
                 # Use a regex to create a valid key from the category name
                 key_safe_category = re.sub(r'[^A-Za-z0-9]+', '', str(category))
                 color_key = f"color_{chart_config['id']}_{key_safe_category}"
                 # Set default color if not already set
                 if category not in chart_config['colors']:
-                    chart_config['colors'][category] = "#000000" # Default to black, user can change
+                    chart_config['colors'][category] = default_colors[i % len(default_colors)]
                 
                 chart_config['colors'][category] = st.color_picker(
                     f"Color for {category}", 
