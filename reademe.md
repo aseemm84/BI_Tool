@@ -80,15 +80,15 @@ This is the final and most creative step.
 ```mermaid
 graph TD
     A[Start: Welcome Page] --> B{1. Upload CSV}
-    B --> C[2. Automated Processing]
+    B --> C[Automated Processing]
     C --> D{Data Cleaning}
     C --> E{Feature Engineering}
     C --> F{Advanced Analysis}
-    D --> G[3. Profiling Report]
+    D --> G[Profiling Report]
     E --> G
     F --> G
-    G --> H["4. Manual Feature Creation (Optional)"]
-    H --> I["5. Segmentation (Optional)"]
+    G --> H["Manual Feature Creation (Optional)"]
+    H --> I["Segmentation (Optional)"]
     I --> J[6. Build Dashboard]
     J --> K{Add KPI Cards}
     J --> L{Add Charts}
