@@ -72,6 +72,29 @@ This is the final and most creative step.
 - **Machine Learning & Analysis**: Scikit-learn, Featuretools
 - **Data Visualization**: Plotly
 
+graph TD
+    A[Start: Welcome Page] --> B{1. Upload CSV};
+    B --> C[2. Automated Processing];
+    C --> D{Data Cleaning};
+    C --> E{Feature Engineering};
+    C --> F{Advanced Analysis};
+    [D, E, F] --> G[3. Profiling Report];
+    G --> H{4. Manual Feature Creation (Optional)};
+    H --> I{5. Segmentation (Optional)};
+    I --> J[6. Build Dashboard];
+    J --> K{Add KPI Cards};
+    J --> L{Add Charts};
+    J --> M{Customize Layout & Theme};
+    J --> N{Use Storytelling Assistant};
+    [K, L, M, N] --> O[End: Interactive & Presentation-Ready Dashboard];
+
+    style A fill:#268bd2,stroke:#333,stroke-width:2px,color:#fff
+    style O fill:#2aa198,stroke:#333,stroke-width:2px,color:#fff
+    style B fill:#6c71c4,stroke:#333,stroke-width:2px,color:#fff
+    style G fill:#b58900,stroke:#333,stroke-width:2px,color:#fff
+    style J fill:#d33682,stroke:#333,stroke-width:2px,color:#fff
+
+
 ## 👤 Author
 
 **Aseem Mehrotra**
