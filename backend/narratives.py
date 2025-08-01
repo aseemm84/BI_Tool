@@ -68,3 +68,72 @@ def generate_narrative(chart_config: dict, df: pd.DataFrame) -> str:
 
     except Exception:
         return "An automated narrative for this chart could not be generated."
+
+def generate_story_suggestion(charts: list) -> str:
+    """
+    Analyzes the list of charts and suggests a narrative flow.
+
+    Args:
+        charts: A list of chart configuration dictionaries.
+
+    Returns:
+        A formatted markdown string with the suggested story.
+    """
+    if not charts:
+        return "Add some charts to get a story suggestion."
+
+    # Define a hierarchy for storytelling
+    story_order = {
+        'KPI & Composition': ['Donut Chart', 'Pie Chart', 'Treemap', 'Sunburst Chart', 'Funnel Chart'],
+        'Trends & Time': ['Line Chart', 'Area Chart'],
+        'Comparisons & Rankings': ['Bar Chart', 'Gantt Chart'],
+        'Relationships & Correlations': ['Scatter Plot', '3D Scatter Plot', 'Bubble Chart', 'Heatmap'],
+        'Distributions': ['Box Plot', 'Violin Chart', 'Histogram'],
+        'Data Tables': ['Data Table']
+    }
+
+    # Categorize existing charts
+    categorized_charts = {
+        'KPI & Composition': [],
+        'Trends & Time': [],
+        'Comparisons & Rankings': [],
+        'Relationships & Correlations': [],
+        'Distributions': [],
+        'Data Tables': []
+    }
+
+    for chart in charts:
+        chart_type = chart.get('type')
+        chart_title = chart.get('title', 'Untitled')
+        for category, types in story_order.items():
+            if chart_type in types:
+                categorized_charts[category].append(chart_title)
+                break
+    
+    # Build the narrative string
+    narrative = [
+        "**💡 Suggested Narrative Flow**",
+        "For a powerful presentation, I recommend organizing your charts to tell this story:"
+    ]
+    
+    story_steps = []
+    if categorized_charts['KPI & Composition']:
+        story_steps.append(f"**Start with the big picture:** Lead with your KPI Cards and composition charts like *{', '.join(categorized_charts['KPI & Composition'])}* to give a high-level overview.")
+    if categorized_charts['Trends & Time']:
+        story_steps.append(f"**Show the trend:** Next, use your time-series charts like *{', '.join(categorized_charts['Trends & Time'])}* to show how performance has evolved.")
+    if categorized_charts['Comparisons & Rankings']:
+        story_steps.append(f"**Make comparisons:** Follow up with ranking charts like *{', '.join(categorized_charts['Comparisons & Rankings'])}* to highlight high and low performers.")
+    if categorized_charts['Relationships & Correlations']:
+        story_steps.append(f"**Explain the 'why':** Explore relationships between variables with charts like *{', '.join(categorized_charts['Relationships & Correlations'])}*.")
+    if categorized_charts['Distributions']:
+        story_steps.append(f"**Drill into details:** Analyze the spread of your data with distribution plots like *{', '.join(categorized_charts['Distributions'])}*.")
+    if categorized_charts['Data Tables']:
+        story_steps.append(f"**Provide the raw data:** Conclude with your data tables like *{', '.join(categorized_charts['Data Tables'])}* for reference.")
+
+    if not story_steps:
+        return "Could not generate a specific story. Try adding a variety of chart types."
+
+    for i, step in enumerate(story_steps, 1):
+        narrative.append(f"{i}. {step}")
+
+    return "\n".join(narrative)
