@@ -80,6 +80,7 @@ N --> O[Presentation Mode]
 
 ### **File Structure**
 
+```mermaid
 Business-Intelligence-App/
 ├── frontend.py # Main Streamlit application
 ├── requirements.txt # Python dependencies
@@ -93,6 +94,7 @@ Business-Intelligence-App/
 │ └── utils.py # Utility functions
 └── .devcontainer/ # Development environment
 └── devcontainer.json # Container configuration
+```
 
 ```mermaid
 
