@@ -63,6 +63,7 @@ A comprehensive Business Intelligence tool built with Streamlit that automates t
 
 ## 🏗️ Architecture Overview
 
+```mermaid
 graph TB
 A[frontend.py] --> B[Backend Modules]
 B --> C[cleaning.py]
@@ -81,6 +82,7 @@ J --> M
 M --> N[Dashboard Creation]
 N --> O[Presentation Mode]
 
+```mermaid
 
 ### **File Structure**
 
