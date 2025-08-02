@@ -94,10 +94,11 @@ graph TD
     J --> L{Add Charts}
     J --> M{Customize Layout & Theme}
     J --> N{Use Storytelling Assistant: at least 4 charts required}
-    K --> O[End: Interactive & Presentation-Ready Dashboard]
-    L --> O
-    M --> O
-    N --> O
+    N --> O{Rearrange Dashboard Using Storytelling Assistant}
+    K --> P[End: Interactive & Presentation-Ready Dashboard]
+    L --> P
+    M --> P
+    N --> P
 
     %% Styling
     style A fill:#268bd2,stroke:#333,stroke-width:2px,color:#fff
