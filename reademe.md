@@ -82,7 +82,7 @@ J --> M
 M --> N[Dashboard Creation]
 N --> O[Presentation Mode]
 
-```mermaid
+```
 
 ### **File Structure**
 
