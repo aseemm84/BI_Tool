@@ -115,8 +115,8 @@ graph TD
     style L fill:#93a1a1,stroke:#333,stroke-width:2px,color:#fff
     style M fill:#93a1a1,stroke:#333,stroke-width:2px,color:#fff
     style N fill:#93a1a1,stroke:#333,stroke-width:2px,color:#fff
-    style O fill:#2aa198,stroke:#333,stroke-width:2px,color:#fff
-
+    style O fill:#93a1a1,stroke:#333,stroke-width:2px,color:#fff
+    style P fill:#2aa198,stroke:#333,stroke-width:2px,color:#fff
 
 
 
