@@ -78,23 +78,6 @@ N --> O[Presentation Mode]
 
 ```
 
-### **File Structure**
-
-```mermaid
-Business-Intelligence-App/
-├── frontend.py # Main Streamlit application
-├── requirements.txt # Python dependencies
-├── reademe.md # Project documentation
-├── backend/ # Core processing modules
-│ ├── init.py # Package initialization
-│ ├── cleaning.py # Data cleaning algorithms
-│ ├── analysis.py # Analytics and ML models
-│ ├── engineering.py # Feature engineering tools
-│ ├── narratives.py # Automated insight generation
-│ └── utils.py # Utility functions
-└── .devcontainer/ # Development environment
-└── devcontainer.json # Container configuration
-```
 
 ```mermaid
 
