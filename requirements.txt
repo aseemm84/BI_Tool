@@ -6,12 +6,5 @@ numpy
 pyjanitor>=0.25.0
 featuretools
 xlsxwriter
-pandas
-streamlit
-plotly
-scikit-learn
-numpy
-pyjanitor>=0.25.0
-featuretools
-xlsxwriter
 setuptools
+openpyxl
