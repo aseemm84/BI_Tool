@@ -172,7 +172,8 @@ def render_chart(chart_config: dict, df: pd.DataFrame):
                             title_font_color="white",
                             tickfont_color="white"
                         ),
-                        legend_font_color="white"
+                        legend_font_color="white",
+                        legend_title_font_color="white"
                     )
                     st.plotly_chart(fig, use_container_width=True)
                 
