@@ -262,10 +262,14 @@ st.markdown("""
     }
     
     /* Text color for sidebar */
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] h1, 
+    [data-testid="stSidebar"] h2, 
+    [data-testid="stSidebar"] h3, 
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] * {
         color: white !important;
     }
-    
     /* Style for containers and expanders */
     [data-testid="stVerticalBlock"], [data-testid="stExpander"] {
         border: 1px solid rgba(255, 255, 255, 0.2);
