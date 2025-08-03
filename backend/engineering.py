@@ -34,13 +34,14 @@ def create_automated_measures(df: pd.DataFrame) -> dict:
 def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     """
     Uses featuretools to automatically create new features and calculates single-value measures.
+    This function is now robust against cases with insufficient numeric columns.
 
     Args:
         df: The pandas DataFrame.
 
     Returns:
         A tuple containing:
-        - The DataFrame with new features.
+        - The DataFrame with new features (or original df if no features could be made).
         - A log dictionary, including calculated measures.
     """
     log = {}
@@ -49,31 +50,45 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     # Calculate automated measures and add them to the log
     log['measures'] = create_automated_measures(df)
     
-    es = ft.EntitySet(id='main_entityset')
-    df_copy = df.copy()
-    if df_copy.index.duplicated().any():
-        df_copy = df_copy.reset_index(drop=True)
-    df_copy['index_col'] = df_copy.index
-    
-    es = es.add_dataframe(
-        dataframe_name='main_data',
-        dataframe=df_copy,
-        index='index_col'
-    )
+    # --- FIX: Check for sufficient numeric columns before running featuretools ---
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    if len(numeric_cols) < 2:
+        log['features_engineered'] = 0
+        # Return the original dataframe if no new features can be made
+        return df, log
 
-    # This part creates new columns (features), which is different from measures
-    feature_matrix, _ = ft.dfs(
-        entityset=es,
-        target_dataframe_name='main_data',
-        trans_primitives=['add_numeric', 'multiply_numeric', 'percentile'],
-        max_depth=1,
-        verbose=False
-    )
-    
-    final_feature_count = len(feature_matrix.columns)
-    log['features_engineered'] = final_feature_count - initial_feature_count
-    
-    return feature_matrix, log
+    try:
+        es = ft.EntitySet(id='main_entityset')
+        df_copy = df.copy()
+        if df_copy.index.duplicated().any():
+            df_copy = df_copy.reset_index(drop=True)
+        df_copy['index_col'] = df_copy.index
+        
+        es = es.add_dataframe(
+            dataframe_name='main_data',
+            dataframe=df_copy,
+            index='index_col'
+        )
+
+        # This part creates new columns (features), which is different from measures
+        feature_matrix, _ = ft.dfs(
+            entityset=es,
+            target_dataframe_name='main_data',
+            trans_primitives=['add_numeric', 'multiply_numeric'],
+            max_depth=1,
+            verbose=False
+        )
+        
+        final_feature_count = len(feature_matrix.columns)
+        log['features_engineered'] = final_feature_count - initial_feature_count
+        
+        return feature_matrix, log
+        
+    except AssertionError:
+        # Catch the specific error if featuretools still fails
+        log['features_engineered'] = 0
+        return df, log
+
 
 def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
     """
