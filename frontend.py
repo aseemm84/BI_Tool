@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import base64
 import re
+import io
 
 from backend import cleaning, analysis, engineering, utils, narratives
 
@@ -56,7 +57,7 @@ def get_category_colors(chart_config: dict, df: pd.DataFrame) -> dict:
         return chart_config['colors']
     return None
 
-def render_dashboard_layout(charts: list, df: pd.DataFrame, theme: str):
+def render_dashboard_layout(charts: list, df: pd.DataFrame):
     """
     Renders the charts in a dynamic grid layout based on their specified sizes.
     """
@@ -76,7 +77,7 @@ def render_dashboard_layout(charts: list, df: pd.DataFrame, theme: str):
             cols = st.columns([c.get('size', 50) for c in row_buffer])
             for j, c_config in enumerate(row_buffer):
                 with cols[j]:
-                    render_chart(c_config, df, theme)
+                    render_chart(c_config, df)
             # Reset buffer for the new row
             row_buffer = [chart_config]
             current_width = chart_size
@@ -90,16 +91,17 @@ def render_dashboard_layout(charts: list, df: pd.DataFrame, theme: str):
         cols = st.columns([c.get('size', 50) for c in row_buffer])
         for j, c_config in enumerate(row_buffer):
             with cols[j]:
-                render_chart(c_config, df, theme)
+                render_chart(c_config, df)
 
 
-def render_chart(chart_config: dict, df: pd.DataFrame, theme: str):
+def render_chart(chart_config: dict, df: pd.DataFrame):
     """Renders a single chart container."""
     is_presentation_mode = st.query_params.get("present") == "true"
     with st.container(border=True):
         st.subheader(chart_config.get('title', 'Chart'))
         try:
-            plotly_template = 'plotly_white' if theme == "Light" else 'plotly_dark'
+            # All charts will use the dark theme now
+            plotly_template = 'plotly_dark'
             fig = None
             narrative_text = ""
 
@@ -108,7 +110,11 @@ def render_chart(chart_config: dict, df: pd.DataFrame, theme: str):
 
             # Handle Data Table separately
             if chart_config['type'] == "Data Table":
-                st.dataframe(df[chart_config.get('columns', df.columns)], use_container_width=True)
+                # FIX: Convert category columns to string to prevent Arrow conversion error
+                table_df = df[chart_config.get('columns', df.columns)].copy()
+                for col in table_df.select_dtypes(include='category').columns:
+                    table_df[col] = table_df[col].astype(str)
+                st.dataframe(table_df, use_container_width=True)
                 narrative_text = f"Displaying {len(chart_config.get('columns', df.columns))} selected columns."
             else:
                 # Build chart with Plotly
@@ -147,7 +153,27 @@ def render_chart(chart_config: dict, df: pd.DataFrame, theme: str):
                     fig = px.histogram(df, x=chart_config.get('x'), y=chart_config.get('y'), **kwargs)
 
                 if fig:
-                    fig.update_layout(template=plotly_template, title_text="")
+                    # FIX: Explicitly set font and line colors for visibility
+                    fig.update_layout(
+                        template=plotly_template,
+                        title_text="",
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font_color="white",
+                        xaxis=dict(
+                            gridcolor='rgba(255, 255, 255, 0.3)',
+                            linecolor='white',
+                            title_font_color="white",
+                            tickfont_color="white"
+                        ),
+                        yaxis=dict(
+                            gridcolor='rgba(255, 255, 255, 0.3)',
+                            linecolor='white',
+                            title_font_color="white",
+                            tickfont_color="white"
+                        ),
+                        legend_font_color="white"
+                    )
                     st.plotly_chart(fig, use_container_width=True)
                 
                 narrative_text = narratives.generate_narrative(chart_config, df)
@@ -166,69 +192,205 @@ def render_chart(chart_config: dict, df: pd.DataFrame, theme: str):
                 st.rerun()
 
 # --- Page Configuration ---
-st.set_page_config(page_title="BI Tool v2.1 by Aseem Mehrotra", page_icon="🚀", layout="wide")
+st.set_page_config(page_title="Advanced Business Intelligence Tool", page_icon="🚀", layout="wide")
 
 # --- Session State Initialization ---
 if 'step' not in st.session_state: st.session_state.step = "welcome"
 if 'processed_df' not in st.session_state: st.session_state.processed_df = None
 if 'charts' not in st.session_state: st.session_state.charts = []
 if 'kpi_cards' not in st.session_state: st.session_state.kpi_cards = []
-if 'theme' not in st.session_state: st.session_state.theme = "Light"
 if 'processing_log' not in st.session_state: st.session_state.processing_log = {}
 if 'story_suggestion' not in st.session_state: st.session_state.story_suggestion = ""
-if 'chart_id_counter' not in st.session_state: st.session_state.chart_id_counter = 0 # <-- FIX ADDED HERE
+if 'chart_id_counter' not in st.session_state: st.session_state.chart_id_counter = 0
 if 'dashboard_settings' not in st.session_state:
     st.session_state.dashboard_settings = {
         'layout': '1920x1080 (Full HD)',
-        'bg_color': '#F0F2F6'
     }
+# New session state variables for file handling
+if 'uploaded_file_data' not in st.session_state: st.session_state.uploaded_file_data = None
+if 'sheet_names' not in st.session_state: st.session_state.sheet_names = None
+
 
 # --- Main App Logic ---
 is_presentation_mode = st.query_params.get("present") == "true"
 
-# Apply custom CSS for background color and layout width
-layout_widths = {
-    '1366x768': 1300, '1440x900': 1400, '1920x1080 (Full HD)': 1800,
-    '2560x1440 (QHD)': 2400, '3840x2160 (4K UHD)': 3600
-}
-settings = st.session_state.dashboard_settings
-max_width = layout_widths.get(settings['layout'], 1800)
-bg_color = settings['bg_color']
-st.markdown(f"""
+# Apply custom CSS for the new theme
+st.markdown("""
 <style>
-    .stApp {{
-        background-color: {bg_color};
-    }}
-    .main .block-container {{
-        max-width: {max_width}px;
-        padding-left: 2rem;
-        padding-right: 2rem;
-    }}
+    /* Main background gradient */
+    .stApp {
+        background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);
+        color: white;
+    }
+
+    /* Main content area styling */
+    .main .block-container {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 10px;
+        padding: 2rem;
+        backdrop-filter: blur(10px);
+    }
+
+    /* Sidebar styling - using stable data-testid selector */
+    [data-testid="stSidebar"] {
+        background: rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+    }
+
+    /* Button styling to match the image - targets regular, download, and form submit buttons */
+    .stButton>button, [data-testid="stDownloadButton"] button, [data-testid="stFormSubmitButton"] button {
+        background: linear-gradient(90deg, #ff0084, #f44336);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 12px 24px;
+        font-weight: bold;
+        transition: transform 0.2s, box-shadow 0.2s;
+        width: 100%;
+    }
+    .stButton>button:hover, [data-testid="stDownloadButton"] button:hover, [data-testid="stFormSubmitButton"] button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 15px #ff0084;
+    }
+
+    /* General text color */
+    body, p, label {
+        color: white;
+    }
+    h1, h2, h3, h4, h5, h6 {
+        color: white !important;
+    }
+    
+    /* Text color for sidebar */
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] label {
+        color: white !important;
+    }
+    
+    /* Style for containers and expanders */
+    [data-testid="stVerticalBlock"], [data-testid="stExpander"] {
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        background-color: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+    
+    /* Style for metric cards */
+    [data-testid="stMetric"] {
+         background-color: rgba(255, 255, 255, 0.1);
+         border-radius: 10px;
+         padding: 1rem;
+    }
+    
+    /* Style for file uploader */
+    [data-testid="stFileUploader"] {
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+    
+    /* Ensure selectbox dropdowns are readable */
+    .st-emotion-cache-1jicfl2 {
+        background-color: #4a00e0;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
 
 # Step 1: Welcome Screen
 if st.session_state.step == "welcome":
-    st.title("🚀 Welcome to the Advanced Business Intelligence App (v2.1)")
-    st.markdown("**Transform raw data into beautiful, insightful, and presentation-ready dashboards in minutes.**")
-    st.markdown("For more details, check out the project's [README on GitHub](https://github.com/aseemm84/Streamlit_BI_Tool/blob/main/reademe.md).")
-    st.markdown("""<div style="text-align: center; padding: 2rem;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank">LinkedIn Profile</a></div>""", unsafe_allow_html=True)
-    if st.button("Let's Get Started!", type="primary"):
+    st.title("🚀 Advanced Business Intelligence Tool")
+    st.markdown("#### Transform your CSV or Excel data into beautiful, interactive dashboards in minutes.")
+    
+    st.markdown("""
+        <div style="display: flex; justify-content: space-around; padding: 2rem 0;">
+            <div style="text-align: center;">
+                <h2 style="color: #ff0084;">15+</h2>
+                <p>Chart Types</p>
+            </div>
+            <div style="text-align: center;">
+                <h2 style="color: #ff0084;">28</h2>
+                <p>Features</p>
+            </div>
+            <div style="text-align: center;">
+                <h2 style="color: #ff0084;">8</h2>
+                <p>Step Workflow</p>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
+
+    if st.button("Launch Application", type="primary"):
         st.session_state.step = "upload"
         st.rerun()
+    
+    # FIX: Added the GitHub/README link back
+    st.markdown("""<div style="text-align: center; padding-top: 1rem;"><a href="https://github.com/aseemm84/Business-Intelligence-App" target="_blank" style="color: #ff0084;">View Project on GitHub / ReadMe</a></div>""", unsafe_allow_html=True)
+
+    st.markdown("""<div style="text-align: center; padding-top: 1rem;"><p>Created by Aseem Mehrotra | <a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank" style="color: #ff0084;">LinkedIn Profile</a></p></div>""", unsafe_allow_html=True)
+
 
 # Step 2: File Upload
 elif st.session_state.step == "upload":
     st.title("1. Upload Your Data")
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
+    uploaded_file = st.file_uploader("Choose a CSV or Excel file", type=["csv", "xlsx"])
+    
     if uploaded_file:
         try:
-            st.session_state.raw_df = pd.read_csv(uploaded_file)
+            # Store the file in session state to persist it
+            st.session_state.uploaded_file_data = uploaded_file.getvalue()
+            file_name = uploaded_file.name
+
+            if file_name.endswith('.csv'):
+                # For CSV, read it directly
+                st.session_state.raw_df = pd.read_csv(io.BytesIO(st.session_state.uploaded_file_data))
+                st.session_state.step = "processing"
+                st.rerun()
+            
+            elif file_name.endswith('.xlsx'):
+                # For Excel, first get sheet names
+                excel_file = pd.ExcelFile(io.BytesIO(st.session_state.uploaded_file_data))
+                st.session_state.sheet_names = excel_file.sheet_names
+                
+                if len(st.session_state.sheet_names) == 1:
+                    # If only one sheet, load it automatically
+                    st.session_state.raw_df = pd.read_excel(excel_file, sheet_name=st.session_state.sheet_names[0])
+                    st.session_state.step = "processing"
+                    st.rerun()
+                else:
+                    # If multiple sheets, move to sheet selection step
+                    st.session_state.step = "select_sheet"
+                    st.rerun()
+
+        except Exception as e: 
+            st.error(f"Error reading file: {e}")
+    
+    if st.button("⬅️ Back to Welcome"): 
+        reset_app()
+
+# Step 2b: Select Sheet (for multi-sheet Excel files)
+elif st.session_state.step == "select_sheet":
+    st.title("2. Select a Sheet")
+    st.info("Your Excel file contains multiple sheets. Please select one to analyze.")
+    
+    selected_sheet = st.selectbox(
+        "Available Sheets",
+        options=st.session_state.sheet_names
+    )
+    
+    if st.button("Load Sheet and Continue", type="primary"):
+        try:
+            # Load the selected sheet into the raw_df
+            excel_file = pd.ExcelFile(io.BytesIO(st.session_state.uploaded_file_data))
+            st.session_state.raw_df = pd.read_excel(excel_file, sheet_name=selected_sheet)
             st.session_state.step = "processing"
             st.rerun()
-        except Exception as e: st.error(f"Error reading file: {e}")
-    if st.button("⬅️ Back to Welcome"): reset_app()
+        except Exception as e:
+            st.error(f"Could not load sheet '{selected_sheet}': {e}")
+            
+    if st.button("⬅️ Back to Upload"):
+        st.session_state.step = "upload"
+        # Clear sheet-related state
+        if 'sheet_names' in st.session_state: del st.session_state.sheet_names
+        if 'uploaded_file_data' in st.session_state: del st.session_state.uploaded_file_data
+        st.rerun()
+
 
 # Step 3: Automated Processing
 elif st.session_state.step == "processing":
@@ -328,7 +490,12 @@ elif st.session_state.step == "manual_feature_creation":
                 st.session_state.processed_df = engineering.create_custom_feature(df, feature_def)
                 st.success(f"Created feature: {col}_counts")
 
-    st.dataframe(st.session_state.processed_df.head())
+    # FIX: Convert category columns to string for display to prevent Arrow conversion error
+    df_display = st.session_state.processed_df.head().copy()
+    for col in df_display.select_dtypes(include='category').columns:
+        df_display[col] = df_display[col].astype(str)
+    st.dataframe(df_display)
+    
     if st.button("Continue to Segmentation ➡️", type="primary"):
         st.session_state.step = "segmentation_choice"
         st.rerun()
@@ -366,7 +533,6 @@ elif st.session_state.step == "dashboard":
     if not is_presentation_mode:
         with st.sidebar:
             st.header("Dashboard Controls")
-            st.session_state.theme = st.radio("Select Theme", ["Light", "Dark"])
             if st.button("🔄 Reset Dashboard", use_container_width=True): 
                 st.session_state.charts = []
                 st.session_state.kpi_cards = []
@@ -377,9 +543,6 @@ elif st.session_state.step == "dashboard":
                     "Layout Resolution",
                     options=['1366x768', '1440x900', '1920x1080 (Full HD)', '2560x1440 (QHD)', '3840x2160 (4K UHD)'],
                     index=2
-                )
-                st.session_state.dashboard_settings['bg_color'] = st.color_picker(
-                    "Background Color", value=st.session_state.dashboard_settings.get('bg_color', '#F0F2F6')
                 )
 
             st.header("KPI Cards")
@@ -475,7 +638,7 @@ elif st.session_state.step == "dashboard":
                         st.rerun()
 
             st.sidebar.markdown("---")
-            st.sidebar.markdown("""<div style="text-align: center; padding-top: 10px;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank">LinkedIn Profile</a></div>""", unsafe_allow_html=True)
+            st.sidebar.markdown("""<div style="text-align: center; padding-top: 10px;"><p style="margin-bottom: 5px;">Created by Aseem Mehrotra</p><a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank" style="color: #ff0084;">LinkedIn Profile</a></div>""", unsafe_allow_html=True)
 
     # --- Main dashboard area ---
     
@@ -489,4 +652,4 @@ elif st.session_state.step == "dashboard":
                 st.metric(label=kpi_name, value=formatted_value)
         st.markdown("---")
 
-    render_dashboard_layout(st.session_state.charts, df, st.session_state.theme)
+    render_dashboard_layout(st.session_state.charts, df)
