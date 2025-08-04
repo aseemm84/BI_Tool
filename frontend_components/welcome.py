@@ -14,16 +14,16 @@ def render():
     st.markdown("""
         <div style="display: flex; justify-content: space-around; padding: 2rem 0;">
             <div style="text-align: center;">
-                <h2 style="color: #ff0084;">15+</h2>
-                <p>Chart Types</p>
+                <h2 style="color: #ff0084;">Automated</h2>
+                <p>Visualizations</p>
             </div>
             <div style="text-align: center;">
-                <h2 style="color: #ff0084;">50+</h2>
-                <p>Features</p>
+                <h2 style="color: #ff0084;">AI-Powered</h2>
+                <p>Insights</p>
             </div>
             <div style="text-align: center;">
-                <h2 style="color: #ff0084;">8</h2>
-                <p>Step Workflow</p>
+                <h2 style="color: #ff0084;">Effortless</h2>
+                <p>Workflow</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
