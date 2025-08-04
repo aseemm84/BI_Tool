@@ -17,7 +17,10 @@ def render():
                 <h2 style="color: #ff0084;">15+</h2>
                 <p>Chart Types</p>
             </div>
-            
+            <div style="text-align: center;">
+                <h2 style="color: #ff0084;">28</h2>
+                <p>Features</p>
+            </div>
             <div style="text-align: center;">
                 <h2 style="color: #ff0084;">8</h2>
                 <p>Step Workflow</p>
