@@ -18,7 +18,7 @@ def render():
                 <p>Chart Types</p>
             </div>
             <div style="text-align: center;">
-                <h2 style="color: #ff0084;">28</h2>
+                <h2 style="color: #ff0084;">50+</h2>
                 <p>Features</p>
             </div>
             <div style="text-align: center;">
