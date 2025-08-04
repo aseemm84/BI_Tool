@@ -32,6 +32,6 @@ def render():
         st.session_state.step = "upload"
         st.rerun()
 
-    st.markdown("""<div style="text-align: center; padding-top: 1rem;"><a href="https://github.com/aseemm84/Business-Intelligence-App" target="_blank" style="color: #ff0084;">View Project on GitHub / ReadMe</a></div>""", unsafe_allow_html=True)
+    st.markdown("""<div style="text-align: center; padding-top: 1rem;"><a href="https://github.com/aseemm84/Business-Intelligence-App/blob/main/reademe.md" target="_blank" style="color: #ff0084;">View Project on GitHub / ReadMe</a></div>""", unsafe_allow_html=True)
     st.markdown("""<div style="text-align: center; padding-top: 1rem;"><p>Created by Aseem Mehrotra | <a href="https://www.linkedin.com/in/aseem-mehrotra" target="_blank" style="color: #ff0084;">LinkedIn Profile</a></p></div>""", unsafe_allow_html=True)
 
