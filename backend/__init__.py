@@ -1,4 +1,16 @@
-# This file can be empty.
-# Its presence tells Python that the 'backend' directory should be
-# treated as a package, allowing us to do clean imports like:
-# from backend.cleaning import clean_data
+# Backend Package
+# This file makes the backend directory a Python package
+
+from . import cleaning
+from . import analysis  
+from . import engineering
+from . import narratives
+from . import utils
+
+__all__ = [
+    'cleaning',
+    'analysis',
+    'engineering', 
+    'narratives',
+    'utils'
+]

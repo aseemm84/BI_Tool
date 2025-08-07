@@ -7,10 +7,8 @@ import featuretools as ft
 def create_automated_measures(df: pd.DataFrame) -> dict:
     """
     Creates single-value measures from a DataFrame, similar to Power BI measures.
-
     Args:
         df: The pandas DataFrame.
-
     Returns:
         A dictionary containing the calculated measures.
     """
@@ -35,10 +33,8 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     """
     Uses featuretools to automatically create new features and calculates single-value measures.
     This function is now robust against cases with insufficient numeric columns.
-
     Args:
         df: The pandas DataFrame.
-
     Returns:
         A tuple containing:
         - The DataFrame with new features (or original df if no features could be made).
@@ -46,10 +42,10 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     """
     log = {}
     initial_feature_count = len(df.columns)
-    
+
     # Calculate automated measures and add them to the log
     log['measures'] = create_automated_measures(df)
-    
+
     # --- FIX: Check for sufficient numeric columns before running featuretools ---
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
     if len(numeric_cols) < 2:
@@ -60,10 +56,12 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
     try:
         es = ft.EntitySet(id='main_entityset')
         df_copy = df.copy()
+
         if df_copy.index.duplicated().any():
             df_copy = df_copy.reset_index(drop=True)
+
         df_copy['index_col'] = df_copy.index
-        
+
         es = es.add_dataframe(
             dataframe_name='main_data',
             dataframe=df_copy,
@@ -78,26 +76,24 @@ def engineer_features_automated(df: pd.DataFrame) -> (pd.DataFrame, dict):
             max_depth=1,
             verbose=False
         )
-        
+
         final_feature_count = len(feature_matrix.columns)
         log['features_engineered'] = final_feature_count - initial_feature_count
-        
+
         return feature_matrix, log
-        
+
     except AssertionError:
         # Catch the specific error if featuretools still fails
         log['features_engineered'] = 0
         return df, log
 
-
 def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
     """
     Creates a new feature based on a user-provided definition dictionary.
-
     Args:
         df: The pandas DataFrame to add the feature to.
         definition: A dictionary defining the feature to create.
-    
+
     Returns:
         The DataFrame with the new feature column.
     """
@@ -108,6 +104,7 @@ def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
         if op_type == 'arithmetic':
             col1, col2, op = definition['col1'], definition['col2'], definition['op']
             new_col_name = f"{col1}_{op}_{col2}"
+
             if op == 'add':
                 df_out[new_col_name] = df_out[col1] + df_out[col2]
             elif op == 'subtract':
@@ -117,22 +114,22 @@ def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
             elif op == 'divide':
                 # Add a small epsilon to avoid division by zero
                 df_out[new_col_name] = df_out[col1] / (df_out[col2] + 1e-6)
-        
+
         elif op_type == 'unary':
             col, op = definition['col'], definition['op']
             new_col_name = f"{op}_of_{col}"
+
             if op == 'log':
                 # Add 1 to avoid log(0)
                 df_out[new_col_name] = np.log(df_out[col] + 1)
             elif op == 'square':
                 df_out[new_col_name] = df_out[col] ** 2
             elif op == 'sqrt':
-                df_out[new_col_name] = np.sqrt(df_out[col].clip(lower=0)) # Avoid sqrt of negative
+                df_out[new_col_name] = np.sqrt(df_out[col].clip(lower=0))  # Avoid sqrt of negative
             elif op == 'average':
                 # Create a new column where every value is the average of the selected column
                 avg_val = df_out[col].mean()
                 df_out[new_col_name] = avg_val
-
 
         elif op_type == 'categorical_count':
             col = definition['col']
@@ -143,19 +140,16 @@ def create_custom_feature(df: pd.DataFrame, definition: dict) -> pd.DataFrame:
     except Exception as e:
         # In a real app, you might want to log this error or show it to the user.
         print(f"Error creating custom feature: {e}")
-        return df # Return original df on error
+        return df  # Return original df on error
 
     return df_out
-
 
 def perform_segmentation(df: pd.DataFrame, n_clusters: int) -> (pd.DataFrame, dict):
     """
     Performs K-Means clustering to segment the data.
-
     Args:
         df: The pandas DataFrame.
         n_clusters: The number of segments to create.
-
     Returns:
         A tuple containing:
         - The DataFrame with a new 'Segment' column.
@@ -163,16 +157,16 @@ def perform_segmentation(df: pd.DataFrame, n_clusters: int) -> (pd.DataFrame, di
     """
     log = {}
     numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    
+
     if not numeric_cols:
         return df, log
 
     scaler = StandardScaler()
     scaled_data = scaler.fit_transform(df[numeric_cols])
-    
+
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     df['Segment'] = kmeans.fit_predict(scaled_data)
     df['Segment'] = df['Segment'].astype('category')
-    
+
     log['segments_created'] = n_clusters
     return df, log

@@ -15,7 +15,7 @@ def get_chart_compatible_columns(df: pd.DataFrame, chart_type: str) -> dict:
     # General purpose charts
     if chart_type in ['Line Chart', 'Bar Chart', 'Area Chart', 'Histogram', 'Box Plot', 'Violin Chart']:
         return {'x': categorical_cols + date_cols + numeric_cols, 'y': numeric_cols}
-    
+
     # Scatter and Bubble charts
     elif chart_type == 'Scatter Plot':
         return {'x': numeric_cols, 'y': numeric_cols, 'color': all_cols, 'size': numeric_cols}
@@ -23,7 +23,7 @@ def get_chart_compatible_columns(df: pd.DataFrame, chart_type: str) -> dict:
         return {'x': numeric_cols, 'y': numeric_cols, 'z': numeric_cols, 'color': all_cols}
     elif chart_type == 'Bubble Chart':
         return {'x': numeric_cols, 'y': numeric_cols, 'size': numeric_cols, 'color': all_cols}
-        
+
     # Hierarchical charts
     elif chart_type in ['Donut Chart', 'Pie Chart', 'Sunburst Chart', 'Treemap', 'Funnel Chart']:
         return {'names': categorical_cols + date_cols, 'values': numeric_cols, 'path': all_cols}
@@ -35,9 +35,15 @@ def get_chart_compatible_columns(df: pd.DataFrame, chart_type: str) -> dict:
     elif chart_type == 'Gantt Chart':
         # Gantt charts have very specific requirements
         return {'Task': categorical_cols, 'Start': date_cols, 'Finish': date_cols, 'Color': all_cols}
-        
+    elif chart_type == 'Gauge Chart':
+        # Gauge charts show single values
+        return {'value': numeric_cols, 'threshold': numeric_cols}
+    elif chart_type == 'Waterfall Chart':
+        # Waterfall charts show cumulative effects
+        return {'names': categorical_cols + date_cols, 'values': numeric_cols}
+
     # For KPI, Data Table, etc.
-    else: 
+    else:   
         return {'all': all_cols}
 
 def to_excel(df: pd.DataFrame) -> bytes:

@@ -1,88 +1,81 @@
 import streamlit as st
 import pandas as pd
 import io
-
 from backend import cleaning, analysis, engineering
 from frontend_components import (
-    welcome, data_loader, processing, profiling,
-    feature_engineering, segmentation, dashboard
+    welcome, data_loader, data_types, processing, profiling,
+    feature_engineering, target_analysis, clustering_analysis, segmentation, dashboard
 )
 
 # --- Page Configuration and Styling ---
 st.set_page_config(page_title="Advanced Business Intelligence Tool", page_icon="🚀", layout="wide")
 
-# Apply custom CSS for the app theme
-# This CSS is the same as in your original file.
+# Apply custom CSS for the app theme with corrected sidebar text color
 st.markdown("""
 <style>
-    /* Main background gradient */
+    .main {
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+    }
     .stApp {
-        background: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);
-        color: white;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     }
-    /* Main content area styling */
-    .main .block-container {
-        background-color: rgba(255, 255, 255, 0.05);
+    .metric-card {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 1rem;
         border-radius: 10px;
-        padding: 2rem;
-        backdrop-filter: blur(10px);
-    }
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(10px);
-    }
-    /* Button styling */
-    .stButton>button, [data-testid="stDownloadButton"] button, [data-testid="stFormSubmitButton"] button {
-        background: linear-gradient(90deg, #ff0084, #f44336);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 12px 24px;
-        font-weight: bold;
-        transition: transform 0.2s, box-shadow 0.2s;
-        width: 100%;
-    }
-    .stButton>button:hover, [data-testid="stDownloadButton"] button:hover, [data-testid="stFormSubmitButton"] button:hover {
-        transform: scale(1.05);
-        box-shadow: 0 0 15px #ff0084;
-    }
-    /* General text color */
-    body, p, label, h1, h2, h3, h4, h5, h6 {
-        color: white !important;
-    }
-    /* Sidebar text color */
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] label,
-    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] * {
-        color: white !important;
-    }
-    /* Container and expander styling */
-    [data-testid="stVerticalBlock"], [data-testid="stExpander"] {
         border: 1px solid rgba(255, 255, 255, 0.2);
-        background-color: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+    }
+    .chart-container {
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
         border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(5px);
+        margin-bottom: 1rem;
     }
-    /* Metric card styling */
-    [data-testid="stMetric"] {
-         background-color: rgba(255, 255, 255, 0.1);
-         border-radius: 10px;
-         padding: 1rem;
+    .sidebar .sidebar-content {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
     }
-    /* File uploader styling */
-    [data-testid="stFileUploader"] {
-        border-color: rgba(255, 255, 255, 0.3);
+    h1, h2, h3 {
+        color: white !important;
     }
-    /* Selectbox dropdown readability */
-    .st-emotion-cache-1jicfl2 {
-        background-color: #4a00e0;
+    .stSelectbox label, .stSlider label, .stMultiSelect label {
+        color: white !important;
+    }
+    .stMarkdown p {
+        color: white !important;
+    }
+    /* Sidebar text styling - make text black */
+    .css-1d391kg, .css-1ht1j8u, .css-10trblm {
+        color: black !important;
+    }
+    section[data-testid="stSidebar"] * {
+        color: black !important;
+    }
+    section[data-testid="stSidebar"] .stMarkdown {
+        color: black !important;
+    }
+    section[data-testid="stSidebar"] h1, 
+    section[data-testid="stSidebar"] h2, 
+    section[data-testid="stSidebar"] h3, 
+    section[data-testid="stSidebar"] h4 {
+        color: black !important;
+    }
+    section[data-testid="stSidebar"] label {
+        color: black !important;
+    }
+    section[data-testid="stSidebar"] .stSelectbox label,
+    section[data-testid="stSidebar"] .stSlider label, 
+    section[data-testid="stSidebar"] .stMultiSelect label,
+    section[data-testid="stSidebar"] .stTextInput label,
+    section[data-testid="stSidebar"] .stButton label {
+        color: black !important;
     }
 </style>
 """, unsafe_allow_html=True)
-
 
 def initialize_session_state():
     """Initializes all required session state variables."""
@@ -99,7 +92,10 @@ def initialize_session_state():
     if 'sheet_names' not in st.session_state: st.session_state.sheet_names = None
     if 'raw_df' not in st.session_state: st.session_state.raw_df = None
     if 'available_measures' not in st.session_state: st.session_state.available_measures = {}
-
+    if 'column_dtypes' not in st.session_state: st.session_state.column_dtypes = {}
+    if 'target_variable' not in st.session_state: st.session_state.target_variable = None
+    if 'influential_analysis' not in st.session_state: st.session_state.influential_analysis = {}
+    if 'clustering_results' not in st.session_state: st.session_state.clustering_results = {}
 
 def main():
     """Main function to run the Streamlit app."""
@@ -114,12 +110,18 @@ def main():
         data_loader.render_upload_page()
     elif step == "select_sheet":
         data_loader.render_sheet_selection_page()
+    elif step == "data_types":
+        data_types.render()
     elif step == "processing":
         processing.render()
     elif step == "profiling_report":
         profiling.render()
     elif step == "manual_feature_creation":
         feature_engineering.render()
+    elif step == "target_analysis":
+        target_analysis.render()
+    elif step == "clustering_analysis":
+        clustering_analysis.render()
     elif step == "segmentation_choice":
         segmentation.render()
     elif step == "dashboard":

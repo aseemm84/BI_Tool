@@ -10,7 +10,7 @@ def _is_likely_date_column(series: pd.Series) -> bool:
     """
     if series.dtype != 'object':
         return False
-    
+
     # Take a small, random sample to check for date-likeness
     sample = series.dropna().sample(n=min(len(series.dropna()), 20))
     if sample.empty:
@@ -24,29 +24,27 @@ def _is_likely_date_column(series: pd.Series) -> bool:
             success_count += 1
         except (ValueError, TypeError):
             pass
+
     # If more than 70% of the sample are parsable, assume it's a date column
     return (success_count / len(sample)) > 0.7
-
-
 
 def _remove_useless_columns(df: pd.DataFrame, log: dict) -> pd.DataFrame:
     """
     Identifies and removes identifier-like columns from the dataframe.
-
     Args:
         df: The pandas DataFrame.
         log: The log dictionary to record actions.
-
     Returns:
         The DataFrame with useless columns removed.
     """
     useless_cols = []
+
     for col in df.columns:
         # Heuristic 1: High cardinality (many unique values)
         if df[col].nunique() / len(df) > 0.95:
             useless_cols.append(col)
             continue
-        
+
         # Heuristic 2: All values are unique (likely an index or primary key)
         if df[col].nunique() == len(df):
             useless_cols.append(col)
@@ -56,16 +54,14 @@ def _remove_useless_columns(df: pd.DataFrame, log: dict) -> pd.DataFrame:
         log['useless_columns_removed'] = useless_cols
     else:
         log['useless_columns_removed'] = []
-        
+
     return df
 
 def clean_data(df: pd.DataFrame) -> (pd.DataFrame, dict):
     """
     Takes a raw DataFrame and performs all the necessary cleaning steps in a logical order.
-
     Args:
         df: The raw pandas DataFrame.
-
     Returns:
         A tuple containing:
         - The cleaned pandas DataFrame.
@@ -108,7 +104,7 @@ def clean_data(df: pd.DataFrame) -> (pd.DataFrame, dict):
         for col in numeric_cols:
             if df[col].isnull().any():
                 df[col].fillna(df[col].median(), inplace=True)
-        
+
         for col in categorical_cols:
             if df[col].isnull().any():
                 mode_values = df[col].mode()
